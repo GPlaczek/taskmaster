@@ -1,18 +1,14 @@
 package server
 
 import (
+	"crypto/sha1"
+	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 	"time"
 )
-
-type Event struct {
-	ID          uint64    `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description,omitempty"`
-	Date        time.Time `json:"date"`
-}
 
 var (
 	events = []Event{
@@ -20,6 +16,34 @@ var (
 	}
 	evId uint64 = 2
 )
+
+type ETag interface {
+	update(tag [20]byte)
+}
+
+type Event struct {
+	ID          uint64    `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description,omitempty"`
+	Date        time.Time `json:"date"`
+	ETag        [20]byte  `json:"-"`
+}
+
+func (e *Event) update(tag [20]byte) {
+	e.ETag = tag
+}
+
+func MarshalAndTag[ET ETag](inst ET) ([]byte, error) {
+	d, err := json.Marshal(inst)
+	if err != nil {
+		return nil, err
+	}
+
+	t := sha1.Sum(d)
+	inst.update(t)
+
+	return d, nil
+}
 
 func getEvents(c *gin.Context) {
 	c.JSON(http.StatusOK, events)
@@ -61,7 +85,13 @@ func getEvent(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, event)
+	d, err := MarshalAndTag[*Event](event)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	c.Header("ETag", fmt.Sprintf("%x", event.ETag))
+	c.Data(http.StatusOK, "application/json", d)
 }
 
 func RunServer() {
