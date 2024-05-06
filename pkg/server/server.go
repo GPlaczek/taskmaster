@@ -2,12 +2,14 @@ package server
 
 import (
 	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
 	"strconv"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 var (
@@ -62,7 +64,73 @@ func addEvent(c *gin.Context) {
 
 	events = append(events, ev)
 
-	c.JSON(http.StatusOK, gin.H{"id": ev.ID})
+	_, err := MarshalAndTag(&ev)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	c.Header("ETag", hex.EncodeToString(ev.ETag[:]))
+	c.Status(http.StatusOK)
+}
+
+func compareETag(e1, e2 []byte) bool {
+	if len(e1) != 20 || len(e2) != 20 {
+		return false
+	}
+
+	for i := range e1 {
+		if e1[i] != e2[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func updateEvent(c *gin.Context) {
+	_id := c.Param("id")
+	id, err := strconv.ParseUint(_id, 10, 64)
+
+	var event *Event = nil
+	var ind int
+	for ind = range events {
+		if events[ind].ID == id {
+			event = &events[ind]
+		}
+	}
+
+	if event == nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	et := c.GetHeader("If-Match")
+	rqet, err := hex.DecodeString(et)
+
+	if err != nil || !compareETag(rqet, event.ETag[:]) {
+		c.Status(http.StatusConflict)
+		return
+	}
+
+	var ev Event
+	if err := c.BindJSON(&ev); err != nil {
+		c.Status(http.StatusUnprocessableEntity)
+		return
+	}
+
+	if ev.ID != event.ID {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	events[ind] = ev
+	_, err = MarshalAndTag(&events[ind])
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	c.Status(http.StatusOK)
 }
 
 func getEvent(c *gin.Context) {
@@ -74,7 +142,7 @@ func getEvent(c *gin.Context) {
 	}
 
 	var event *Event = nil
-	for i, _ := range events {
+	for i := range events {
 		if events[i].ID == id {
 			event = &events[i]
 		}
@@ -85,13 +153,13 @@ func getEvent(c *gin.Context) {
 		return
 	}
 
-	d, err := MarshalAndTag[*Event](event)
+	_, err = MarshalAndTag(event)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	c.Header("ETag", fmt.Sprintf("%x", event.ETag))
-	c.Data(http.StatusOK, "application/json", d)
+	c.Header("ETag", hex.EncodeToString(event.ETag[:]))
+	c.JSON(http.StatusOK, &event)
 }
 
 func RunServer() {
@@ -99,5 +167,6 @@ func RunServer() {
 	router.GET("/events", getEvents)
 	router.POST("/events", addEvent)
 	router.GET("/events/:id", getEvent)
+	router.PUT("/events/:id", updateEvent)
 	router.Run("localhost:8080")
 }
