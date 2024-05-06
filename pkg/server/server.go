@@ -73,6 +73,31 @@ func addEvent(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+func removeEvent(c *gin.Context) {
+	_id := c.Param("id")
+	id, err := strconv.ParseUint(_id, 10, 64)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	var ind int = -1
+	for i := range events {
+		if events[i].ID == id {
+			ind = i
+			break
+		}
+	}
+
+	if ind == -1 {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	events = append(events[:ind], events[ind+1:]...)
+	c.Status(http.StatusOK)
+}
+
 func compareETag(e1, e2 []byte) bool {
 	if len(e1) != 20 || len(e2) != 20 {
 		return false
@@ -90,6 +115,10 @@ func compareETag(e1, e2 []byte) bool {
 func updateEvent(c *gin.Context) {
 	_id := c.Param("id")
 	id, err := strconv.ParseUint(_id, 10, 64)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
 
 	var event *Event = nil
 	var ind int
@@ -168,5 +197,6 @@ func RunServer() {
 	router.POST("/events", addEvent)
 	router.GET("/events/:id", getEvent)
 	router.PUT("/events/:id", updateEvent)
+	router.DELETE("/events/:id", removeEvent)
 	router.Run("localhost:8080")
 }
