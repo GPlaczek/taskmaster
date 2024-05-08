@@ -2,22 +2,24 @@ package mem
 
 import (
 	"github.com/GPlaczek/taskmaster/pkg/data"
+
+	omap "github.com/wk8/go-ordered-map"
 )
 
 type Data struct {
-	events []*Event
+	events *omap.OrderedMap
 	evId int64
 }
 
 func NewData() *Data {
 	return &Data {
-		[]*Event{},
+		omap.New(),
 		0,
 	}
 }
 
 func (d *Data)AddEvent(ed *data.EventData) (data.Event, error) {
-	ev := Event{
+	ev := &Event{
 		ID: d.evId,
 	}
 
@@ -31,46 +33,40 @@ func (d *Data)AddEvent(ed *data.EventData) (data.Event, error) {
 		return nil, err
 	}
 
-	d.events = append(d.events, &ev)
+	d.events.Set(ev.ID, ev) 
 	d.evId++
 
-	return &ev, nil
+	return ev, nil
 }
 
 func (d *Data)GetEvents() []data.Event {
-	arr := make([]data.Event, len(d.events))
+	arr := make([]data.Event, d.events.Len())
+	p := d.events.Oldest()
+	i := 0
 
-	for i, ev := range d.events{
-		arr[i] = ev
+	for p != nil {
+		arr[i] = p.Value.(*Event)
+		p = p.Next()
+		i = 1
 	}
 
 	return arr
 }
 
 func (d *Data)GetEvent(id int64) data.Event {
-	for i := range d.events {
-		if d.events[i].ID == id {
-			return d.events[i]
-		}
+	p, ok := d.events.Get(id)
+	if !ok {
+		return nil
 	}
 
-	return nil
+	return p.(*Event)
 }
 
 func (d *Data)DeleteEvent(id int64) error {
-	var ind int = -1
-	for i := range d.events {
-		if d.events[i].ID == id {
-			ind = i
-			break
-		}
+	_, ok := d.events.Delete(id)
+	if !ok {
+		return data.ErrNotFound
 	}
-
-	if ind == -1 {
-		return data.ErrInvalidId
-	}
-
-	d.events = append(d.events[:ind], d.events[ind+1:]...)
 
 	return nil
 }
