@@ -81,3 +81,7 @@ func (e *Event) PartialUpdate(ed *data.EventData) error {
 
 	return nil
 }
+
+func (e *Event)GetID() int64 {
+	return e.ID
+}

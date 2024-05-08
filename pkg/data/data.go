@@ -13,6 +13,7 @@ type Event interface {
 	ETag
 	Update(*EventData) error
 	PartialUpdate(*EventData) error
+	GetID() int64
 }
 
 type Data interface {

@@ -60,7 +60,7 @@ func (a *Api)addEvent(c *gin.Context) {
 	}
 
 	c.Header("ETag", hex.EncodeToString(e.ETagGet()))
-	c.Status(http.StatusOK)
+	c.JSON(http.StatusOK, gin.H{"id": e.GetID()})
 }
 
 func (a *Api)updateEvent(c *gin.Context) {
@@ -106,6 +106,19 @@ func (a *Api)deleteEvent(c *gin.Context) {
 	id, err := strconv.ParseInt(_id, 10, 64)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	event := a.data.GetEvent(id)
+	if event == nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	et := c.GetHeader("If-Match")
+	rqet, err := hex.DecodeString(et)
+	if err != nil || !event.ETagCompare(rqet) {
+		c.Status(http.StatusConflict)
 		return
 	}
 
