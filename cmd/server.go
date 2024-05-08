@@ -1,9 +1,11 @@
 package main
 
 import (
-	"github.com/GPlaczek/taskmaster/pkg/server"
+	"github.com/GPlaczek/taskmaster/pkg/api"
+	"github.com/GPlaczek/taskmaster/pkg/data/mem"
 )
 
 func main() {
-	server.RunServer()
+	a := api.NewApi(mem.NewData())
+	a.RunServer()
 }
