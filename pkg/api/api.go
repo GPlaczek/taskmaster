@@ -55,8 +55,13 @@ func (a *Api)addEvent(c *gin.Context) {
 
 	e, err := a.data.AddEvent(&ev)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
+		if errors.Is(err, data.ErrMissingField) || errors.Is(err, data.ErrInvalidId) {
+			c.Status(http.StatusBadRequest)
+			return
+		} else {
+			c.Status(http.StatusInternalServerError)
+			return
+		}
 	}
 
 	c.Header("ETag", hex.EncodeToString(e.ETagGet()))
