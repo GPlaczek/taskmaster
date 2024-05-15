@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"strconv"
 	"errors"
 	"encoding/hex"
@@ -40,21 +41,21 @@ func (a *Api)getEvent(c *gin.Context) {
 		return
 	}
 
-	ev.ETagUpdate()
-	c.Header("ETag", hex.EncodeToString(ev.ETagGet()))
+	c.Header("ETag", hex.EncodeToString(ev.ETag))
 	c.JSON(http.StatusOK, &ev)
 }
 
 func (a *Api)addEvent(c *gin.Context) {
 	var ev data.EventData
 
-	if err := c.BindJSON(&ev); err != nil {
+	if err := c.ShouldBindJSON(&ev); err != nil {
 		c.Status(http.StatusUnprocessableEntity)
 		return
 	}
 
 	e, err := a.data.AddEvent(&ev)
 	if err != nil {
+		fmt.Println(err)
 		if errors.Is(err, data.ErrMissingField) || errors.Is(err, data.ErrInvalidId) {
 			c.Status(http.StatusBadRequest)
 			return
@@ -64,8 +65,8 @@ func (a *Api)addEvent(c *gin.Context) {
 		}
 	}
 
-	c.Header("ETag", hex.EncodeToString(e.ETagGet()))
-	c.JSON(http.StatusOK, gin.H{"id": e.GetID()})
+	c.Header("ETag", hex.EncodeToString(e.ETag))
+	c.JSON(http.StatusOK, gin.H{"id": e.ID})
 }
 
 func (a *Api)updateEvent(c *gin.Context) {
@@ -76,33 +77,27 @@ func (a *Api)updateEvent(c *gin.Context) {
 		return
 	}
 
-	event := a.data.GetEvent(id) 
-	if event == nil {
-		c.Status(http.StatusNotFound)
-		return
-	}
-
 	et := c.GetHeader("If-Match")
 	rqet, err := hex.DecodeString(et)
-
-	if err != nil || !event.ETagCompare(rqet) {
+	if err != nil {
 		c.Status(http.StatusConflict)
 		return
 	}
 
+	c.Status(http.StatusUnprocessableEntity)
 	var ev data.EventData
-	if err := c.BindJSON(&ev); err != nil {
+	if err := c.ShouldBindJSON(&ev); err != nil {
 		c.Status(http.StatusUnprocessableEntity)
 		return
 	}
 
-	err = event.Update(&ev)
+	e, err := a.data.UpdateEvent(id, &ev, rqet)
 	if err != nil {
-		println(err)
-		c.Status(http.StatusBadRequest)
+		c.Status(data.ErrToHttpStatus(err))
 		return
 	}
 
+	c.Header("ETag", hex.EncodeToString(e.ETag))
 	c.Status(http.StatusOK)
 }
 
@@ -114,30 +109,20 @@ func (a *Api)deleteEvent(c *gin.Context) {
 		return
 	}
 
-	event := a.data.GetEvent(id)
-	if event == nil {
-		c.Status(http.StatusNotFound)
-		return
-	}
-
 	et := c.GetHeader("If-Match")
 	rqet, err := hex.DecodeString(et)
-	if err != nil || !event.ETagCompare(rqet) {
+	if err != nil {
 		c.Status(http.StatusConflict)
 		return
 	}
 
-	err = a.data.DeleteEvent(id)
-	if err == nil {
-		c.Status(http.StatusOK)
+	err = a.data.DeleteEvent(id, rqet)
+	if err != nil {
+		c.Status(data.ErrToHttpStatus(err)) 
 		return
 	}
 
-	if errors.Is(err, data.ErrNotFound) {
-		c.Status(http.StatusNotFound)
-	} else {
-		c.Status(http.StatusInternalServerError)
-	}
+	c.Status(http.StatusOK)
 }
 
 func (a *Api)RunServer() {
