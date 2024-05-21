@@ -112,10 +112,58 @@ func (a *Api) deleteEvent(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+func (a *Api) bindAttachment(c *gin.Context) {
+	_id := c.Param("id")
+	eid, err := strconv.ParseInt(_id, 10, 64)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	var at data.AttachmentData
+	if err := c.ShouldBindJSON(&at); err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	if at.ID == nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	err = a.data.BindAttachment(eid, *at.ID)
+	if err != nil {
+		c.Status(data.ErrToHttpStatus(err))
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
+func (a *Api) getBoundAttachments(c *gin.Context) {
+	_id := c.Param("id")
+	eid, err := strconv.ParseInt(_id, 10, 64)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	ad, err := a.data.GetBoundAttachments(eid)
+	if err != nil {
+		c.Status(data.ErrToHttpStatus(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, ad)
+}
+
 func (a *Api) eventRoutes(router *gin.Engine) {
 	router.GET("/events", a.getEvents)
 	router.POST("/events", a.addEvent)
 	router.GET("/events/:id", a.getEvent)
 	router.PUT("/events/:id", a.updateEvent)
 	router.DELETE("/events/:id", a.deleteEvent)
+
+	router.POST("/events/:id/attachments", a.bindAttachment)
+	router.GET("/events/:id/attachments", a.getBoundAttachments)
 }

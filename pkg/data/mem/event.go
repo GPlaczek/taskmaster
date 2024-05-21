@@ -10,18 +10,18 @@ import (
 )
 
 type Event struct {
-	ID          int64        `json:"id"`
-	Name        string       `json:"name"`
-	Description string       `json:"description"`
-	Date        time.Time    `json:"date"`
-	eTag        []byte       `json:"-"`
-	lock        sync.RWMutex `json:"-"`
-
+	ID          int64         `json:"id"`
+	Name        string        `json:"name"`
+	Description string        `json:"description"`
+	Date        time.Time     `json:"date"`
+	Attachments []*Attachment `json:"attachments"`
+	eTag        []byte        `json:"-"`
+	lock        sync.RWMutex  `json:"-"`
 }
 
 func NewEvent(id int64) *Event {
 	return &Event{
-		ID: id,
+		ID:   id,
 		lock: sync.RWMutex{},
 	}
 }
@@ -38,7 +38,7 @@ func (e *Event) eTagUpdate() error {
 	return nil
 }
 
-func (e *Event)ETagUpdate() error {
+func (e *Event) ETagUpdate() error {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
@@ -74,7 +74,7 @@ func (e *Event) ETagCompare(tag []byte) bool {
 	e.lock.RLock()
 	defer e.lock.RUnlock()
 
-	return e.eTagCompare(tag) 
+	return e.eTagCompare(tag)
 }
 
 func (e *Event) update(ed *data.EventData, tag []byte) (*data.EventData, error) {
@@ -130,12 +130,20 @@ func (e *Event) PartialUpdate(ed *data.EventData) error {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
-	return e.partialUpdate(ed) 
+	return e.partialUpdate(ed)
 }
 
-func (e *Event)GetID() int64 {
-	e.lock.RLock()
-	defer e.lock.RUnlock()
+func (e *Event) bindAttachment(at *Attachment) error {
+	e.Attachments = append(e.Attachments, at)
 
-	return e.ID
+	return nil
+}
+
+func (e *Event) getBoundAttachments() []data.AttachmentData {
+	ad := make([]data.AttachmentData, len(e.Attachments))
+	for i, at := range e.Attachments {
+		ad[i] = *NewAttachmentData(at)
+	}
+
+	return ad
 }

@@ -46,6 +46,13 @@ Add Test Object
 
     RETURN  ${Id}  ${ETag}
 
+Bind Attachment To Event
+    [Arguments]  ${eid}  ${aid}  ${expected_status}=200
+    ${Request Body}  Create Dictionary
+    Set To Dictionary  ${Request Body}  id  ${aid}
+
+    POST  http://localhost:8080/events/${eid}/attachments  json=${Request Body}  expected_status=${expected_status}
+
 Simple GET On Collection
     [Arguments]  ${collection}
     ${response}  GET  http://localhost:8080/${collection}
@@ -113,6 +120,7 @@ Simple DELETE On Object
     Set To Dictionary  ${Request Headers}  If-Match  ${ETag}
 
     DELETE  http://localhost:8080/${collection}/${Id}  headers=${Request Headers}
+
 
 *** Test Cases ***
 GET Events End Point Should Work
@@ -194,3 +202,38 @@ Deleting Events Should Fail For Missing ETag
 Deleting Attachments Should Fail For Missing ETag
     ${Attachment Id}  ${_}  Add Test Object  attachments
     DELETE  http://localhost:8080/attachments/${Attachment Id}  expected_status=409
+
+Binding Attachments To Events Should Work
+    ${Event Id}  ${_}  Add Test Object  events
+    ${Attachment Id}  ${_}  Add Test Object  attachments
+
+    Bind Attachment To Event  ${Event Id}  ${Attachment Id}
+
+Reading Bound Attachments Should Work
+    ${Event Id}  ${_}  Add Test Object  events
+    ${Attachment Id}  ${_}  Add Test Object  attachments
+
+    Bind Attachment To Event  ${Event Id}  ${Attachment Id}
+
+    ${Response}  GET  http://localhost:8080/events/${Event Id}/attachments
+    ${Body}  Set Variable  ${Response.json()}
+    Should Not Be Empty  ${Body}
+
+Binding The Same Attachment Twice Should Not Work
+    ${Event Id}  ${_}  Add Test Object  events
+    ${Attachment Id}  ${_}  Add Test Object  attachments
+
+    Bind Attachment To Event  ${Event Id}  ${Attachment Id}
+    Bind Attachment To Event  ${Event Id}  ${Attachment Id}  expected_status=409
+
+Binding Attachment Should Not Work For Invalid Event
+    ${Event Id}  ${_}  Add Test Object  events
+    ${Attachment Id}  ${_}  Add Test Object  attachments
+
+    Bind Attachment To Event  -1  ${Attachment Id}  expected_status=404
+
+Binding Attachment Should Not Work For Invalid Attachment
+    ${Event Id}  ${_}  Add Test Object  events
+    ${Attachment Id}  ${_}  Add Test Object  attachments
+
+    Bind Attachment To Event  ${Event Id}  ${-1}  expected_status=404

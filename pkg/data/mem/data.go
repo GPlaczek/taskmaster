@@ -207,3 +207,42 @@ func (d *Data) DeleteAttachment(id int64, tag []byte) error {
 
 	return nil
 }
+
+func (d *Data) BindAttachment(eid int64, aid int64) error {
+	ev_, ok := d.events.Get(eid)
+	if !ok {
+		return data.ErrNotFound
+	}
+	at_, ok := d.attachments.Get(aid)
+	if !ok {
+		return data.ErrNotFound
+	}
+	ev := ev_.(*Event)
+	at := at_.(*Attachment)
+
+	ev.lock.Lock()
+	defer ev.lock.Unlock()
+
+	for _, a := range ev.Attachments {
+		if a == at {
+			return data.ErrConflict
+		}
+	}
+	ev.Attachments = append(ev.Attachments, at)
+
+	return nil
+}
+
+func (d *Data) GetBoundAttachments(eid int64) ([]data.AttachmentData, error) {
+	ev_, ok := d.events.Get(eid)
+	if !ok {
+		return nil, data.ErrNotFound
+	}
+
+	ev := ev_.(*Event)
+
+	ev.lock.RLock()
+	defer ev.lock.RUnlock()
+
+	return ev.getBoundAttachments(), nil
+}

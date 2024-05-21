@@ -39,6 +39,9 @@ type Data interface {
 	GetAttachment(int64) *AttachmentData
 	DeleteAttachment(int64, []byte) error
 	UpdateAttachment(int64, *AttachmentData, []byte) (*AttachmentData, error)
+
+	BindAttachment(int64, int64) error
+	GetBoundAttachments(int64) ([]AttachmentData, error)
 }
 
 type EventData struct {
@@ -50,7 +53,8 @@ type EventData struct {
 }
 
 type AttachmentData struct {
-	ID   *int64  `json:"id"`
-	Data *string `json:"data"`
-	ETag []byte  `json:"-"`
+	ID    *int64  `json:"id"`
+	Data  *string `json:"data"`
+	ETag  []byte  `json:"-"`
+	Event *int64  `json:"-"`
 }

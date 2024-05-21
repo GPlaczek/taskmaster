@@ -16,7 +16,7 @@ func NewApi(d data.Data) *Api {
 	}
 }
 
-func (a *Api)RunServer() {
+func (a *Api) RunServer() {
 	router := gin.Default()
 	a.eventRoutes(router)
 	a.attachmentRoutes(router)

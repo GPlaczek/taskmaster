@@ -34,14 +34,14 @@ func (a *Attachment) eTagUpdate() error {
 	return nil
 }
 
-func (a *Attachment)ETagUpdate() error {
+func (a *Attachment) ETagUpdate() error {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 
 	return a.eTagUpdate()
 }
 
-func (a *Attachment)ETagGet() []byte {
+func (a *Attachment) ETagGet() []byte {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
 
@@ -70,7 +70,7 @@ func (a *Attachment) ETagCompare(tag []byte) bool {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
 
-	return a.eTagCompare(tag) 
+	return a.eTagCompare(tag)
 }
 
 func (a *Attachment) update(ad *data.AttachmentData, tag []byte) (*data.AttachmentData, error) {
