@@ -4,8 +4,8 @@ Library        RequestsLibrary
 Library        Collections
 
 Test Timeout   5s
-Test Setup     Setup Test
-Test Teardown  Teardown Test
+Suite Setup          Setup Test
+Suite Teardown       Teardown Test
 
 *** Keywords ***
 Setup Test
