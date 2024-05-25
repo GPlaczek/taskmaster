@@ -1,0 +1,5 @@
+server
+**/venv
+robot/*.html
+robot/*.xml
+robot/log.txt
