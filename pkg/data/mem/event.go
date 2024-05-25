@@ -1,8 +1,6 @@
 package mem
 
 import (
-	"crypto/sha1"
-	"encoding/json"
 	"sync"
 	"time"
 
@@ -10,12 +8,12 @@ import (
 )
 
 type Event struct {
+	data.ETag
 	ID          int64         `json:"id"`
 	Name        string        `json:"name"`
 	Description string        `json:"description"`
 	Date        time.Time     `json:"date"`
 	Attachments []*Attachment `json:"attachments"`
-	eTag        []byte        `json:"-"`
 	lock        sync.RWMutex  `json:"-"`
 }
 
@@ -26,59 +24,8 @@ func NewEvent(id int64) *Event {
 	}
 }
 
-func (e *Event) eTagUpdate() error {
-	data, err := json.Marshal(e)
-	if err != nil {
-		return err
-	}
-
-	t := sha1.Sum(data)
-	e.eTag = t[:]
-
-	return nil
-}
-
-func (e *Event) ETagUpdate() error {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-
-	return e.eTagUpdate()
-}
-
-func (e *Event) ETagGet() []byte {
-	e.lock.RLock()
-	defer e.lock.RUnlock()
-
-	return e.eTag[:]
-}
-
-func (e *Event) eTagCompare(tag []byte) bool {
-	if e.eTag == nil {
-		return true
-	}
-
-	if len(tag) != 20 {
-		return false
-	}
-
-	for i, b := range e.eTag {
-		if tag[i] != b {
-			return false
-		}
-	}
-
-	return true
-}
-
-func (e *Event) ETagCompare(tag []byte) bool {
-	e.lock.RLock()
-	defer e.lock.RUnlock()
-
-	return e.eTagCompare(tag)
-}
-
 func (e *Event) update(ed *data.EventData, tag []byte) (*data.EventData, error) {
-	if !e.eTagCompare(tag) {
+	if !e.ETagCompare(tag) {
 		return nil, data.ErrConflict
 	}
 
@@ -94,7 +41,7 @@ func (e *Event) update(ed *data.EventData, tag []byte) (*data.EventData, error) 
 	e.Description = *ed.Description
 	e.Date = *ed.Date
 
-	e.eTagUpdate()
+	e.ETagUpdate()
 
 	return NewEventData(e), nil
 }

@@ -1,9 +1,11 @@
 package mem
 
 import (
-	"github.com/GPlaczek/taskmaster/pkg/data"
 	"strings"
 	"time"
+
+
+	"github.com/GPlaczek/taskmaster/pkg/data"
 
 	omap "github.com/wk8/go-ordered-map"
 )
@@ -29,8 +31,9 @@ func NewEventData(e *Event) *data.EventData {
 	date := time.Date(e.Date.Year(), e.Date.Month(), e.Date.Day(),
 		e.Date.Hour(), e.Date.Minute(), e.Date.Second(),
 		e.Date.Nanosecond(), e.Date.Location())
-	eTag := make([]byte, len(e.eTag))
-	copy(eTag, e.eTag)
+	tg := e.ETagGet()
+	eTag := make([]byte, len(tg))
+	copy(eTag, tg)
 	return &data.EventData{
 		ID:          &id,
 		Name:        &name,
@@ -43,8 +46,9 @@ func NewEventData(e *Event) *data.EventData {
 func NewAttachmentData(a *Attachment) *data.AttachmentData {
 	id := a.ID
 	dt := strings.Clone(a.Data)
-	eTag := make([]byte, len(a.eTag))
-	copy(eTag, a.eTag)
+	tg := a.ETagGet()
+	eTag := make([]byte, len(tg))
+	copy(eTag, tg)
 
 	return &data.AttachmentData{
 		ID:   &id,
@@ -63,7 +67,7 @@ func (d *Data) AddEvent(ed *data.EventData) (*data.EventData, error) {
 		return nil, err
 	}
 
-	err = ev.eTagUpdate()
+	err = ev.ETagUpdate()
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +111,7 @@ func (d *Data) DeleteEvent(id int64, tag []byte) error {
 	ev.lock.Lock()
 	defer ev.lock.Unlock()
 
-	if !ev.eTagCompare(tag) {
+	if !ev.ETagCompare(tag) {
 		return data.ErrConflict
 	}
 
@@ -139,7 +143,7 @@ func (d *Data) AddAttachment(ad *data.AttachmentData) (*data.AttachmentData, err
 		return nil, err
 	}
 
-	err = at.eTagUpdate()
+	err = at.ETagUpdate()
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +200,7 @@ func (d *Data) DeleteAttachment(id int64, tag []byte) error {
 	at.lock.Lock()
 	defer at.lock.Unlock()
 
-	if !at.eTagCompare(tag) {
+	if !at.ETagCompare(tag) {
 		return data.ErrConflict
 	}
 
