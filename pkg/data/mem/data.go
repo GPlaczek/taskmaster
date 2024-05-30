@@ -4,7 +4,6 @@ import (
 	"strings"
 	"time"
 
-
 	"github.com/GPlaczek/taskmaster/pkg/data"
 
 	omap "github.com/wk8/go-ordered-map"
@@ -15,10 +14,13 @@ type Data struct {
 	evId        int64
 	attachments *omap.OrderedMap
 	atId        int64
+	merges      *omap.OrderedMap
+	meId        int64
 }
 
 func NewData() *Data {
 	return &Data{
+		omap.New(), 0,
 		omap.New(), 0,
 		omap.New(), 0,
 	}
@@ -54,6 +56,20 @@ func NewAttachmentData(a *Attachment) *data.AttachmentData {
 		ID:   &id,
 		Data: &dt,
 		ETag: eTag,
+	}
+}
+
+func NewMergeData(me *Merge) *data.MergeData {
+	id := me.ID
+	id1 := me.ID1
+	id2 := me.ID2
+	newId := me.NewID
+
+	return &data.MergeData{
+		ID: &id,
+		ID1: &id1,
+		ID2: &id2,
+		NewID: &newId,
 	}
 }
 
@@ -249,4 +265,78 @@ func (d *Data) GetBoundAttachments(eid int64) ([]data.AttachmentData, error) {
 	defer ev.lock.RUnlock()
 
 	return ev.getBoundAttachments(), nil
+}
+
+func (d *Data) MergeEvents(md *data.MergeData) (*data.EventData, *data.MergeData, error) {
+	if md.ID1 == nil {
+		return nil, nil, data.ErrMissingField
+	}
+	e1 := *md.ID1
+
+	if md.ID2 == nil {
+		return nil, nil, data.ErrMissingField
+	}
+	e2 := *md.ID2
+
+	if e1 == e2 {
+		return nil, nil, data.ErrConflict
+	}
+
+	ev1_, ok := d.events.Get(e1)
+	if !ok {
+		return nil, nil, data.ErrNotFound
+	}
+	ev1 := ev1_.(*Event)
+	ev1.lock.Lock()
+	defer ev1.lock.Unlock()
+
+	ev2_, ok := d.events.Get(e2)
+	if !ok {
+		return nil, nil, data.ErrNotFound
+	}
+	ev2 := ev2_.(*Event)
+	ev2.lock.Lock()
+	defer ev2.lock.Unlock()
+
+	ev3 := NewEvent(d.evId)
+	ev3.lock.Lock()
+	defer ev3.lock.Unlock()
+
+	me := NewMerge(d.meId, ev1, ev2, ev3)
+
+	d.merges.Set(d.meId, me)
+	d.meId++
+
+	med := NewMergeData(me)
+	e3d := NewEventData(ev3)
+
+	d.events.Set(d.evId, ev3)
+	d.events.Delete(ev1.ID)
+	d.events.Delete(ev2.ID)
+
+	return e3d, med, nil
+}
+
+func (d *Data) GetMerges() []data.MergeData {
+	arr := make([]data.MergeData, d.merges.Len())
+	p := d.merges.Oldest()
+	i := 0
+
+	for p != nil {
+		arr[i] = *NewMergeData(p.Value.(*Merge))
+		p = p.Next()
+		i = 1
+	}
+
+	return arr
+}
+
+func (d *Data) GetMerge(id int64) *data.MergeData {
+	p, ok := d.merges.Get(id)
+	if !ok {
+		return nil
+	}
+
+	me := p.(*Merge)
+	return NewMergeData(me)
 }

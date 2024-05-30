@@ -42,6 +42,10 @@ type Data interface {
 
 	BindAttachment(int64, int64) error
 	GetBoundAttachments(int64) ([]AttachmentData, error)
+
+	MergeEvents(*MergeData) (*EventData, *MergeData, error)
+	GetMerges() []MergeData
+	GetMerge(int64) *MergeData
 }
 
 type EventData struct {
@@ -57,4 +61,11 @@ type AttachmentData struct {
 	Data  *string `json:"data"`
 	ETag  []byte  `json:"-"`
 	Event *int64  `json:"-"`
+}
+
+type MergeData struct {
+	ID    *int64 `json:"id"`
+	ID1   *int64 `json:"id1"`
+	ID2   *int64 `json:"id2"`
+	NewID *int64 `json:"new_id"`
 }

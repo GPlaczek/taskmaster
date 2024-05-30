@@ -237,3 +237,24 @@ Binding Attachment Should Not Work For Invalid Attachment
     ${Attachment Id}  ${_}  Add Test Object  attachments
 
     Bind Attachment To Event  ${Event Id}  ${-1}  expected_status=404
+
+Merging Events Should Work
+    ${Event Id 1}  ${_}  Add Test Object  events
+    ${Event Id 2}  ${_}  Add Test Object  events
+
+    ${Request Body}  Create Dictionary
+    Set To Dictionary  ${Request Body}  id1  ${Event Id 1}
+    Set To Dictionary  ${Request Body}  id2  ${Event Id 2}
+
+    POST  http://localhost:8080/merges  json=${Request Body}
+
+Reading Merges Should Work
+    ${Event Id 1}  ${_}  Add Test Object  events
+    ${Event Id 2}  ${_}  Add Test Object  events
+
+    ${Request Body}  Create Dictionary
+    Set To Dictionary  ${Request Body}  id1  ${Event Id 1}
+    Set To Dictionary  ${Request Body}  id2  ${Event Id 2}
+
+    POST  http://localhost:8080/merges  json=${Request Body}
+    GET  http://localhost:8080/merges

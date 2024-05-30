@@ -20,5 +20,6 @@ func (a *Api) RunServer() {
 	router := gin.Default()
 	a.eventRoutes(router)
 	a.attachmentRoutes(router)
+	a.mergeRoutes(router) 
 	router.Run("localhost:8080")
 }
