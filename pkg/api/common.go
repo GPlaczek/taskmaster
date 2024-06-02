@@ -24,8 +24,8 @@ func checkETag(c *gin.Context) []byte {
 	return rqet
 }
 
-func getID(c *gin.Context) (int64, bool) {
-	_id := c.Param("id")
+func getID2(c *gin.Context, name string) (int64, bool) {
+	_id := c.Param(name)
 	id, err := strconv.ParseInt(_id, 10, 64)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
@@ -33,4 +33,8 @@ func getID(c *gin.Context) (int64, bool) {
 	}
 
 	return id, true
+}
+
+func getID(c *gin.Context) (int64, bool) {
+	return getID2(c, "id")
 }

@@ -8,15 +8,17 @@ import (
 
 type Attachment struct {
 	data.ETag
-	ID   int64        `json:"id"`
-	Data string       `json:"data"`
-	lock sync.RWMutex `json:"-"`
+	ID    int64        `json:"id"`
+	Data  string       `json:"data"`
+	lock  sync.RWMutex `json:"-"`
+	event *Event       `json:"-"`
 }
 
 func NewAttachment(id int64) *Attachment {
 	return &Attachment{
 		ID:   id,
 		lock: sync.RWMutex{},
+		event: nil,
 	}
 }
 

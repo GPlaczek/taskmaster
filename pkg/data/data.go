@@ -46,6 +46,7 @@ type Data interface {
 	UpdateAttachment(int64, *AttachmentData, []byte) (*AttachmentData, error)
 
 	BindAttachment(int64, int64) error
+	UnbindAttachment(int64, int64) error
 	GetBoundAttachments(int64) ([]AttachmentData, error)
 
 	MergeEvents(*MergeData) (*EventData, *MergeData, error)

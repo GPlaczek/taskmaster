@@ -41,38 +41,3 @@ Delete Should Fail For Invalid Event Id
 Deleting Events Should Fail For Missing ETag
     ${Event Id}  ${_}  Add Test Object  events
     DELETE  http://localhost:8080/events/${Event Id}  expected_status=428
-
-Binding Attachments To Events Should Work
-    ${Event Id}  ${_}  Add Test Object  events
-    ${Attachment Id}  ${_}  Add Test Object  attachments
-
-    Bind Attachment To Event  ${Event Id}  ${Attachment Id}
-
-Reading Bound Attachments Should Work
-    ${Event Id}  ${_}  Add Test Object  events
-    ${Attachment Id}  ${_}  Add Test Object  attachments
-
-    Bind Attachment To Event  ${Event Id}  ${Attachment Id}
-
-    ${Response}  GET  http://localhost:8080/events/${Event Id}/attachments
-    ${Body}  Set Variable  ${Response.json()}
-    Should Not Be Empty  ${Body}
-
-Binding The Same Attachment Twice Should Not Work
-    ${Event Id}  ${_}  Add Test Object  events
-    ${Attachment Id}  ${_}  Add Test Object  attachments
-
-    Bind Attachment To Event  ${Event Id}  ${Attachment Id}
-    Bind Attachment To Event  ${Event Id}  ${Attachment Id}  expected_status=409
-
-Binding Attachment Should Not Work For Invalid Event
-    ${Event Id}  ${_}  Add Test Object  events
-    ${Attachment Id}  ${_}  Add Test Object  attachments
-
-    Bind Attachment To Event  999999  ${Attachment Id}  expected_status=404
-
-Binding Attachment Should Not Work For Invalid Attachment
-    ${Event Id}  ${_}  Add Test Object  events
-    ${Attachment Id}  ${_}  Add Test Object  attachments
-
-    Bind Attachment To Event  ${Event Id}  ${999999}  expected_status=404

@@ -37,11 +37,16 @@ Add Test Object
     RETURN  ${Id}  ${ETag}
 
 Bind Attachment To Event
-    [Arguments]  ${eid}  ${aid}  ${expected_status}=200
+    [Arguments]  ${eid}  ${aid}  ${expected_status}=201
     ${Request Body}  Create Dictionary
     Set To Dictionary  ${Request Body}  id  ${aid}
 
     POST  http://localhost:8080/events/${eid}/attachments  json=${Request Body}  expected_status=${expected_status}
+
+Unbind Attachment From Event
+    [Arguments]  ${eid}  ${aid}  ${expected_status}=204
+
+    DELETE  http://localhost:8080/events/${eid}/attachments/${aid}  expected_status=${expected_status}
 
 Simple GET On Collection
     [Arguments]  ${collection}

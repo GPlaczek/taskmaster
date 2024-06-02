@@ -110,7 +110,7 @@ func (a *Api) bindAttachment(c *gin.Context) {
 		return
 	}
 
-	c.Status(http.StatusOK)
+	c.Status(http.StatusCreated)
 }
 
 func (a *Api) getBoundAttachments(c *gin.Context) {
@@ -128,13 +128,36 @@ func (a *Api) getBoundAttachments(c *gin.Context) {
 	c.JSON(http.StatusOK, ad)
 }
 
+func (a *Api) unbindAttachment(c *gin.Context) {
+	eid, ok := getID(c)
+	if !ok {
+		return
+	}
+
+	aid, ok := getID2(c, "aid")
+	if !ok {
+		return
+	}
+
+	err := a.data.UnbindAttachment(eid, aid)
+	if err != nil {
+		c.Status(data.ErrToHttpStatus(err))
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
 func (a *Api) eventRoutes(router *gin.Engine) {
 	router.GET("/events", a.getEvents)
 	router.POST("/events", a.addEvent)
-	router.GET("/events/:id", a.getEvent)
-	router.PUT("/events/:id", a.updateEvent)
-	router.DELETE("/events/:id", a.deleteEvent)
 
-	router.POST("/events/:id/attachments", a.bindAttachment)
-	router.GET("/events/:id/attachments", a.getBoundAttachments)
+	eventRouter := router.Group("/events/:id")
+	eventRouter.GET("/", a.getEvent)
+	eventRouter.PUT("/", a.updateEvent)
+	eventRouter.DELETE("/", a.deleteEvent)
+
+	eventRouter.POST("/attachments", a.bindAttachment)
+	eventRouter.GET("/attachments", a.getBoundAttachments)
+	eventRouter.DELETE("/attachments/:aid", a.unbindAttachment) 
 }

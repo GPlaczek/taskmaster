@@ -283,6 +283,35 @@ func (d *Data) BindAttachment(eid int64, aid int64) error {
 	return nil
 }
 
+func (d *Data) UnbindAttachment(eid int64, aid int64) error {
+	d.evLock.RLock()
+	defer d.evLock.RUnlock()
+	ev_, ok := d.events.Get(eid)
+	if !ok {
+		return data.ErrNotFound
+	}
+
+	d.atLock.RLock()
+	defer d.atLock.RUnlock()
+	at_, ok := d.attachments.Get(aid)
+	if !ok {
+		return data.ErrNotFound
+	}
+	ev := ev_.(*Event)
+	at := at_.(*Attachment)
+
+	ev.lock.Lock()
+	defer ev.lock.Unlock()
+	at.lock.RLock()
+	defer at.lock.RUnlock()
+
+	if err := ev.unbindAttachment(at); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (d *Data) GetBoundAttachments(eid int64) ([]data.AttachmentData, error) {
 	d.evLock.RLock()
 	defer d.evLock.RUnlock()
