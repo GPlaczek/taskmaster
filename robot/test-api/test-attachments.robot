@@ -23,6 +23,10 @@ Updating Attachment Should Fail For Missing ETag
     [Template]  PUT Without ETag On Object
     attachments
 
+Updating Attachment Should Fail For Invalid ETag
+    [Template]  PUT With Invalid ETag On Object
+    attachments
+
 Updating Attachments Should Fail For Invalid Job Id
     [Template]  PUT With Invalid Id
     attachments

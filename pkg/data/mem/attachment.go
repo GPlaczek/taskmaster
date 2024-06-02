@@ -22,7 +22,7 @@ func NewAttachment(id int64) *Attachment {
 
 func (a *Attachment) update(ad *data.AttachmentData, tag []byte) (*data.AttachmentData, error) {
 	if !a.ETagCompare(tag) {
-		return nil, data.ErrConflict
+		return nil, data.ErrInvalidEtag
 	}
 
 	if ad.ID != nil && a.ID != *ad.ID {

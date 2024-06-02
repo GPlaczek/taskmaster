@@ -83,6 +83,19 @@ PUT Without ETag On Object
 
     ${Response}  PUT  http://localhost:8080/${collection}/${Id}  json=${Request Body}  expected_status=428
 
+PUT With Invalid ETag On Object
+    [Arguments]  ${collection}
+
+    ${Id}  ${_}  Add Test Object  ${collection}
+    ${Response}  GET  http://localhost:8080/${collection}/${Id}
+    ${Response Body}  Set Variable  ${Response.json()}
+    ${Request Body}  Get Updated Object Body  ${collection}  ${Response Body}
+
+    ${Request Headers}  Create Dictionary
+    Set To Dictionary  ${Request Headers}  If-Match  deadbeefcafe12345678
+
+    ${Response}  PUT  http://localhost:8080/${collection}/${Id}  json=${Request Body}  expected_status=412  headers=${Request Headers}
+
 PUT With Incomplete Data
     [Arguments]  ${collection}
     ${Id}  ${_}  Add Test Object  ${collection}

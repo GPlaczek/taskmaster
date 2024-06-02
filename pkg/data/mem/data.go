@@ -128,7 +128,7 @@ func (d *Data) DeleteEvent(id int64, tag []byte) error {
 	defer ev.lock.Unlock()
 
 	if !ev.ETagCompare(tag) {
-		return data.ErrConflict
+		return data.ErrInvalidEtag
 	}
 
 	_, ok = d.events.Delete(id)
@@ -217,7 +217,7 @@ func (d *Data) DeleteAttachment(id int64, tag []byte) error {
 	defer at.lock.Unlock()
 
 	if !at.ETagCompare(tag) {
-		return data.ErrConflict
+		return data.ErrInvalidEtag
 	}
 
 	_, ok = d.attachments.Delete(id)

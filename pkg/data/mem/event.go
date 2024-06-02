@@ -26,7 +26,7 @@ func NewEvent(id int64) *Event {
 
 func (e *Event) update(ed *data.EventData, tag []byte) (*data.EventData, error) {
 	if !e.ETagCompare(tag) {
-		return nil, data.ErrConflict
+		return nil, data.ErrInvalidEtag
 	}
 
 	if ed.ID != nil && e.ID != *ed.ID {

@@ -25,6 +25,10 @@ Updating Event Should Fail For Missing ETag
     [Template]  PUT Without ETag On Object
     events
 
+Updating Event Should Fail For Invalid ETag
+    [Template]  PUT With Invalid ETag On Object
+    events
+
 Updating Events Should Fail For Invalid Job Id
     [Template]  PUT With Invalid Id
     events

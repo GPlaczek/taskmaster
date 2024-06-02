@@ -7,10 +7,13 @@ import (
 	"net/http"
 )
 
-var ErrNotFound = errors.New("Item not found")
-var ErrInvalidId = errors.New("Invalid ID")
-var ErrMissingField = errors.New("Missing field")
-var ErrConflict = errors.New("Resource conflict")
+var (
+	ErrNotFound     = errors.New("Item not found")
+	ErrInvalidId    = errors.New("Invalid ID")
+	ErrMissingField = errors.New("Missing field")
+	ErrConflict     = errors.New("Resource conflict")
+	ErrInvalidEtag  = errors.New("Invalid etag")
+)
 
 func ErrToHttpStatus(err error) int {
 	switch {
@@ -22,6 +25,8 @@ func ErrToHttpStatus(err error) int {
 		return http.StatusBadRequest
 	case errors.Is(err, ErrConflict):
 		return http.StatusConflict
+	case errors.Is(err, ErrInvalidEtag):
+		return http.StatusPreconditionFailed
 	}
 
 	return http.StatusInternalServerError
