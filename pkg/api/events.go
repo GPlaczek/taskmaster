@@ -85,7 +85,7 @@ func (a *Api) deleteEvent(c *gin.Context) {
 		return
 	}
 
-	c.Status(http.StatusOK)
+	c.Status(http.StatusNoContent)
 }
 
 func (a *Api) bindAttachment(c *gin.Context) {

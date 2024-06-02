@@ -122,7 +122,7 @@ Simple DELETE On Object
     ${Request Headers}  Create Dictionary
     Set To Dictionary  ${Request Headers}  If-Match  ${ETag}
 
-    DELETE  http://localhost:8080/${collection}/${Id}  headers=${Request Headers}
+    DELETE  http://localhost:8080/${collection}/${Id}  headers=${Request Headers}  expected_status=204
 
 PUT With Invalid Id
     [Arguments]  ${collection}

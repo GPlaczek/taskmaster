@@ -85,7 +85,7 @@ func (a *Api) deleteAttachment(c *gin.Context) {
 		return
 	}
 
-	c.Status(http.StatusOK)
+	c.Status(http.StatusNoContent)
 }
 
 func (a *Api) attachmentRoutes(router *gin.Engine) {
