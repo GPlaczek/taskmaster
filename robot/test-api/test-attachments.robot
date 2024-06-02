@@ -24,7 +24,8 @@ Updating Attachment Should Fail For Missing ETag
     attachments
 
 Updating Attachments Should Fail For Invalid Job Id
-    PUT  http://localhost:8080/attachments/-1  expected_status=404  data={}
+    [Template]  PUT With Invalid Id
+    attachments
 
 Updating Attachments Should Fail For Incomplete Data
     [Template]  PUT With Incomplete Data
@@ -35,8 +36,9 @@ Deleting Attachments Should Work
     attachments
 
 Delete Should Fail For Invalid Attachment Id
-    DELETE  http://localhost:8080/attachments/-1  expected_status=404
+    [Template]  DELETE With Invalid Id
+    attachments
 
 Deleting Attachments Should Fail For Missing ETag
     ${Attachment Id}  ${_}  Add Test Object  attachments
-    DELETE  http://localhost:8080/attachments/${Attachment Id}  expected_status=409
+    DELETE  http://localhost:8080/attachments/${Attachment Id}  expected_status=428

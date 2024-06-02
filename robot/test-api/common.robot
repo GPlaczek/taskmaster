@@ -81,7 +81,7 @@ PUT Without ETag On Object
     ${Response Body}  Set Variable  ${Response.json()}
     ${Request Body}  Get Updated Object Body  ${collection}  ${Response Body}
 
-    ${Response}  PUT  http://localhost:8080/${collection}/${Id}  json=${Request Body}  expected_status=409
+    ${Response}  PUT  http://localhost:8080/${collection}/${Id}  json=${Request Body}  expected_status=428
 
 PUT With Incomplete Data
     [Arguments]  ${collection}
@@ -107,3 +107,18 @@ Simple DELETE On Object
     Set To Dictionary  ${Request Headers}  If-Match  ${ETag}
 
     DELETE  http://localhost:8080/${collection}/${Id}  headers=${Request Headers}
+
+PUT With Invalid Id
+    [Arguments]  ${collection}
+    ${Request Headers}  Create Dictionary
+    Set To Dictionary  ${Request Headers}  If-Match  deadbeefcafe12345678
+
+    PUT  http://localhost:8080/${collection}/999999  expected_status=404  headers=${Request Headers}  data={}
+
+DELETE With Invalid Id
+    [Arguments]  ${collection}
+    ${Request Headers}  Create Dictionary
+    Set To Dictionary  ${Request Headers}  If-Match  deadbeefcafe12345678
+
+    DELETE  http://localhost:8080/${collection}/999999  expected_status=404  headers=${Request Headers}
+    

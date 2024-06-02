@@ -3,9 +3,7 @@ package api
 import (
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/GPlaczek/taskmaster/pkg/data"
 	"github.com/gin-gonic/gin"
@@ -16,16 +14,12 @@ func (a *Api) getAttachments(c *gin.Context) {
 }
 
 func (a *Api) getAttachment(c *gin.Context) {
-	_id := c.Param("id")
-	id, err := strconv.ParseInt(_id, 10, 64)
-	if err != nil {
-		c.Status(http.StatusBadRequest)
+	id, ok := getID(c)
+	if !ok {
 		return
 	}
 
 	at := a.data.GetAttachment(id)
-	fmt.Println(at)
-
 	if at == nil {
 		c.Status(http.StatusNotFound)
 		return
@@ -59,21 +53,16 @@ func (a *Api) addAttachment(c *gin.Context) {
 }
 
 func (a *Api) updateAttachment(c *gin.Context) {
-	_id := c.Param("id")
-	id, err := strconv.ParseInt(_id, 10, 64)
-	if err != nil {
-		c.Status(http.StatusBadRequest)
+	id, ok := getID(c)
+	if !ok {
 		return
 	}
 
-	et := c.GetHeader("If-Match")
-	rqet, err := hex.DecodeString(et)
-	if err != nil {
-		c.Status(http.StatusConflict)
+	rqet := checkETag(c)
+	if rqet == nil {
 		return
 	}
 
-	c.Status(http.StatusUnprocessableEntity)
 	var at data.AttachmentData
 	if err := c.ShouldBindJSON(&at); err != nil {
 		c.Status(http.StatusUnprocessableEntity)
@@ -91,22 +80,18 @@ func (a *Api) updateAttachment(c *gin.Context) {
 }
 
 func (a *Api) deleteAttachment(c *gin.Context) {
-	_id := c.Param("id")
-	id, err := strconv.ParseInt(_id, 10, 64)
-	if err != nil {
-		c.Status(http.StatusBadRequest)
+	id, ok := getID(c)
+	if !ok {
 		return
 	}
 
-	et := c.GetHeader("If-Match")
-	rqet, err := hex.DecodeString(et)
-	if err != nil {
-		c.Status(http.StatusConflict)
+	rqet := checkETag(c)
+	if rqet == nil {
 		return
 	}
 
-	err = a.data.DeleteAttachment(id, rqet)
-	if err != nil {
+	
+	if err := a.data.DeleteAttachment(id, rqet); err != nil {
 		c.Status(data.ErrToHttpStatus(err))
 		return
 	}

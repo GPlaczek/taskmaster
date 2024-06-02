@@ -24,7 +24,7 @@ func ErrToHttpStatus(err error) int {
 		return http.StatusConflict
 	}
 
-	return -1
+	return http.StatusInternalServerError
 }
 
 type Data interface {

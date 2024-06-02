@@ -2,9 +2,7 @@ package api
 
 import (
 	"encoding/hex"
-	"errors"
 	"net/http"
-	"strconv"
 
 	"github.com/GPlaczek/taskmaster/pkg/data"
 	"github.com/gin-gonic/gin"
@@ -15,10 +13,8 @@ func (a *Api) getEvents(c *gin.Context) {
 }
 
 func (a *Api) getEvent(c *gin.Context) {
-	_id := c.Param("id")
-	id, err := strconv.ParseInt(_id, 10, 64)
-	if err != nil {
-		c.Status(http.StatusBadRequest)
+	id, ok := getID(c)
+	if !ok {
 		return
 	}
 
@@ -43,13 +39,8 @@ func (a *Api) addEvent(c *gin.Context) {
 
 	e, err := a.data.AddEvent(&ev)
 	if err != nil {
-		if errors.Is(err, data.ErrMissingField) || errors.Is(err, data.ErrInvalidId) {
-			c.Status(http.StatusBadRequest)
-			return
-		} else {
-			c.Status(http.StatusInternalServerError)
-			return
-		}
+		c.Status(data.ErrToHttpStatus(err))
+		return
 	}
 
 	c.Header("ETag", hex.EncodeToString(e.ETag))
@@ -57,21 +48,16 @@ func (a *Api) addEvent(c *gin.Context) {
 }
 
 func (a *Api) updateEvent(c *gin.Context) {
-	_id := c.Param("id")
-	id, err := strconv.ParseInt(_id, 10, 64)
-	if err != nil {
-		c.Status(http.StatusBadRequest)
+	id, ok := getID(c)
+	if !ok {
 		return
 	}
 
-	et := c.GetHeader("If-Match")
-	rqet, err := hex.DecodeString(et)
-	if err != nil {
-		c.Status(http.StatusConflict)
+	rqet := checkETag(c)
+	if rqet == nil {
 		return
 	}
 
-	c.Status(http.StatusUnprocessableEntity)
 	var ev data.EventData
 	if err := c.ShouldBindJSON(&ev); err != nil {
 		c.Status(http.StatusUnprocessableEntity)
@@ -89,22 +75,18 @@ func (a *Api) updateEvent(c *gin.Context) {
 }
 
 func (a *Api) deleteEvent(c *gin.Context) {
-	_id := c.Param("id")
-	id, err := strconv.ParseInt(_id, 10, 64)
-	if err != nil {
-		c.Status(http.StatusBadRequest)
+	id, ok := getID(c)
+	if !ok {
 		return
 	}
 
-	et := c.GetHeader("If-Match")
-	rqet, err := hex.DecodeString(et)
-	if err != nil {
-		c.Status(http.StatusConflict)
+	rqet := checkETag(c)
+	if rqet == nil {
 		return
 	}
 
-	err = a.data.DeleteEvent(id, rqet)
-	if err != nil {
+	
+	if err := a.data.DeleteEvent(id, rqet); err != nil {
 		c.Status(data.ErrToHttpStatus(err))
 		return
 	}
@@ -113,10 +95,8 @@ func (a *Api) deleteEvent(c *gin.Context) {
 }
 
 func (a *Api) bindAttachment(c *gin.Context) {
-	_id := c.Param("id")
-	eid, err := strconv.ParseInt(_id, 10, 64)
-	if err != nil {
-		c.Status(http.StatusBadRequest)
+	eid, ok := getID(c)
+	if !ok {
 		return
 	}
 
@@ -131,8 +111,8 @@ func (a *Api) bindAttachment(c *gin.Context) {
 		return
 	}
 
-	err = a.data.BindAttachment(eid, *at.ID)
-	if err != nil {
+	
+	if err := a.data.BindAttachment(eid, *at.ID); err != nil {
 		c.Status(data.ErrToHttpStatus(err))
 		return
 	}
@@ -141,10 +121,8 @@ func (a *Api) bindAttachment(c *gin.Context) {
 }
 
 func (a *Api) getBoundAttachments(c *gin.Context) {
-	_id := c.Param("id")
-	eid, err := strconv.ParseInt(_id, 10, 64)
-	if err != nil {
-		c.Status(http.StatusBadRequest)
+	eid, ok := getID(c)
+	if !ok {
 		return
 	}
 

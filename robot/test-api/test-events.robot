@@ -26,7 +26,8 @@ Updating Event Should Fail For Missing ETag
     events
 
 Updating Events Should Fail For Invalid Job Id
-    PUT  http://localhost:8080/events/-1  expected_status=404  data={}
+    [Template]  PUT With Invalid Id
+    events
 
 Updating Events Should Fail For Incomplete Data
     [Template]  PUT With Incomplete Data
@@ -37,11 +38,12 @@ Deleting Events Should Work
     events
 
 Delete Should Fail For Invalid Event Id
-    DELETE  http://localhost:8080/events/-1  expected_status=404
+    [Template]  DELETE With Invalid Id
+    events
 
 Deleting Events Should Fail For Missing ETag
     ${Event Id}  ${_}  Add Test Object  events
-    DELETE  http://localhost:8080/events/${Event Id}  expected_status=409
+    DELETE  http://localhost:8080/events/${Event Id}  expected_status=428
 
 Binding Attachments To Events Should Work
     ${Event Id}  ${_}  Add Test Object  events
@@ -70,10 +72,10 @@ Binding Attachment Should Not Work For Invalid Event
     ${Event Id}  ${_}  Add Test Object  events
     ${Attachment Id}  ${_}  Add Test Object  attachments
 
-    Bind Attachment To Event  -1  ${Attachment Id}  expected_status=404
+    Bind Attachment To Event  999999  ${Attachment Id}  expected_status=404
 
 Binding Attachment Should Not Work For Invalid Attachment
     ${Event Id}  ${_}  Add Test Object  events
     ${Attachment Id}  ${_}  Add Test Object  attachments
 
-    Bind Attachment To Event  ${Event Id}  ${-1}  expected_status=404
+    Bind Attachment To Event  ${Event Id}  ${999999}  expected_status=404

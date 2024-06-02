@@ -37,7 +37,7 @@ Merging Event With Invalid Event Should Not Work
 
     ${Request Body}  Create Dictionary
     Set To Dictionary  ${Request Body}  id1  ${Event Id 1}
-    Set To Dictionary  ${Request Body}  id2  ${-1}
+    Set To Dictionary  ${Request Body}  id2  ${999999}
 
     POST  http://localhost:8080/merges  json=${Request Body}  expected_status=404
 
@@ -45,7 +45,7 @@ Merging Invalid Event With Event Should Not Work
     ${Event Id 1}  ${_}  Add Test Object  events
 
     ${Request Body}  Create Dictionary
-    Set To Dictionary  ${Request Body}  id1  ${-1}
+    Set To Dictionary  ${Request Body}  id1  ${999999}
     Set To Dictionary  ${Request Body}  id2  ${Event Id 1}
 
     POST  http://localhost:8080/merges  json=${Request Body}  expected_status=404
