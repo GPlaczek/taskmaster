@@ -2,6 +2,7 @@ package mem
 
 import (
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GPlaczek/taskmaster/pkg/data"
@@ -12,17 +13,20 @@ import (
 type Data struct {
 	events      *omap.OrderedMap
 	evId        int64
+	evLock      sync.RWMutex
 	attachments *omap.OrderedMap
 	atId        int64
-	merges      *omap.OrderedMap
+	atLock      sync.RWMutex
+	merges      []Merge
 	meId        int64
+	meLock      sync.RWMutex
 }
 
 func NewData() *Data {
 	return &Data{
-		omap.New(), 0,
-		omap.New(), 0,
-		omap.New(), 0,
+		omap.New(), 0, sync.RWMutex{},
+		omap.New(), 0, sync.RWMutex{},
+		make([]Merge, 0), 0, sync.RWMutex{},
 	}
 }
 
@@ -74,6 +78,9 @@ func NewMergeData(me *Merge) *data.MergeData {
 }
 
 func (d *Data) AddEvent() (*data.EventData, error) {
+	d.evLock.Lock()
+	defer d.evLock.Unlock()
+
 	eid := d.evId
 	ev := NewEvent(eid)
 	ev.lock.Lock()
@@ -91,6 +98,9 @@ func (d *Data) AddEvent() (*data.EventData, error) {
 }
 
 func (d *Data) GetEvents() []data.EventData {
+	d.evLock.RLock()
+	defer d.evLock.RUnlock()
+
 	arr := make([]data.EventData, d.events.Len())
 	p := d.events.Oldest()
 	i := 0
@@ -105,6 +115,9 @@ func (d *Data) GetEvents() []data.EventData {
 }
 
 func (d *Data) GetEvent(id int64) *data.EventData {
+	d.evLock.RLock()
+	defer d.evLock.RUnlock()
+
 	p, ok := d.events.Get(id)
 	if !ok {
 		return nil
@@ -115,6 +128,9 @@ func (d *Data) GetEvent(id int64) *data.EventData {
 }
 
 func (d *Data) DeleteEvent(id int64, tag []byte) error {
+	d.evLock.Lock()
+	defer d.evLock.Unlock()
+
 	e, ok := d.events.Get(id)
 	if !ok {
 		return data.ErrNotFound
@@ -136,6 +152,9 @@ func (d *Data) DeleteEvent(id int64, tag []byte) error {
 }
 
 func (d *Data) UpdateEvent(id int64, ed *data.EventData, tag []byte) (*data.EventData, error) {
+	d.evLock.RLock()
+	defer d.evLock.RUnlock()
+
 	p, ok := d.events.Get(id)
 	if !ok {
 		return nil, data.ErrNotFound
@@ -146,6 +165,9 @@ func (d *Data) UpdateEvent(id int64, ed *data.EventData, tag []byte) (*data.Even
 }
 
 func (d *Data) AddAttachment() (*data.AttachmentData, error) {
+	d.atLock.Lock()
+	defer d.atLock.Unlock()
+
 	aid := d.atId
 	at := NewAttachment(aid)
 	at.lock.Lock()
@@ -163,6 +185,9 @@ func (d *Data) AddAttachment() (*data.AttachmentData, error) {
 }
 
 func (d *Data) GetAttachments() []data.AttachmentData {
+	d.atLock.RLock()
+	defer d.atLock.RUnlock()
+
 	arr := make([]data.AttachmentData, d.events.Len())
 	p := d.events.Oldest()
 	i := 0
@@ -177,6 +202,9 @@ func (d *Data) GetAttachments() []data.AttachmentData {
 }
 
 func (d *Data) GetAttachment(id int64) *data.AttachmentData {
+	d.atLock.RLock()
+	defer d.atLock.RUnlock()
+
 	p, ok := d.attachments.Get(id)
 	if !ok {
 		return nil
@@ -190,6 +218,9 @@ func (d *Data) GetAttachment(id int64) *data.AttachmentData {
 }
 
 func (d *Data) UpdateAttachment(id int64, ad *data.AttachmentData, tag []byte) (*data.AttachmentData, error) {
+	d.atLock.RLock()
+	defer d.atLock.RUnlock()
+
 	p, ok := d.attachments.Get(id)
 	if !ok {
 		return nil, data.ErrNotFound
@@ -200,6 +231,9 @@ func (d *Data) UpdateAttachment(id int64, ad *data.AttachmentData, tag []byte) (
 }
 
 func (d *Data) DeleteAttachment(id int64, tag []byte) error {
+	d.atLock.RLock()
+	defer d.atLock.RUnlock()
+
 	a, ok := d.attachments.Get(id)
 	if !ok {
 		return data.ErrNotFound
@@ -221,10 +255,15 @@ func (d *Data) DeleteAttachment(id int64, tag []byte) error {
 }
 
 func (d *Data) BindAttachment(eid int64, aid int64) error {
+	d.evLock.RLock()
+	defer d.evLock.RUnlock()
 	ev_, ok := d.events.Get(eid)
 	if !ok {
 		return data.ErrNotFound
 	}
+
+	d.atLock.RLock()
+	defer d.atLock.RUnlock()
 	at_, ok := d.attachments.Get(aid)
 	if !ok {
 		return data.ErrNotFound
@@ -234,18 +273,20 @@ func (d *Data) BindAttachment(eid int64, aid int64) error {
 
 	ev.lock.Lock()
 	defer ev.lock.Unlock()
+	at.lock.RLock()
+	defer at.lock.RUnlock()
 
-	for _, a := range ev.Attachments {
-		if a == at {
-			return data.ErrConflict
-		}
+	if err := ev.bindAttachment(at); err != nil {
+		return err
 	}
-	ev.Attachments = append(ev.Attachments, at)
 
 	return nil
 }
 
 func (d *Data) GetBoundAttachments(eid int64) ([]data.AttachmentData, error) {
+	d.evLock.RLock()
+	defer d.evLock.RUnlock()
+
 	ev_, ok := d.events.Get(eid)
 	if !ok {
 		return nil, data.ErrNotFound
@@ -260,6 +301,11 @@ func (d *Data) GetBoundAttachments(eid int64) ([]data.AttachmentData, error) {
 }
 
 func (d *Data) MergeEvents(md *data.MergeData) (*data.EventData, *data.MergeData, error) {
+	d.evLock.Lock()
+	defer d.evLock.Unlock()
+	d.meLock.Lock()
+	defer d.meLock.Unlock()
+
 	if md.ID1 == nil {
 		return nil, nil, data.ErrMissingField
 	}
@@ -296,7 +342,7 @@ func (d *Data) MergeEvents(md *data.MergeData) (*data.EventData, *data.MergeData
 
 	me := NewMerge(d.meId, ev1, ev2, ev3)
 
-	d.merges.Set(d.meId, me)
+	d.merges = append(d.merges, *me)
 	d.meId++
 
 	med := NewMergeData(me)
@@ -310,25 +356,24 @@ func (d *Data) MergeEvents(md *data.MergeData) (*data.EventData, *data.MergeData
 }
 
 func (d *Data) GetMerges() []data.MergeData {
-	arr := make([]data.MergeData, d.merges.Len())
-	p := d.merges.Oldest()
-	i := 0
+	d.meLock.RLock()
+	defer d.meLock.RUnlock()
 
-	for p != nil {
-		arr[i] = *NewMergeData(p.Value.(*Merge))
-		p = p.Next()
-		i = 1
+	arr := make([]data.MergeData, len(d.merges))
+	for i := range d.merges {
+		arr[i] = *NewMergeData(&d.merges[i])
 	}
 
 	return arr
 }
 
 func (d *Data) GetMerge(id int64) *data.MergeData {
-	p, ok := d.merges.Get(id)
-	if !ok {
+	d.meLock.RLock()
+	defer d.meLock.RUnlock()
+
+	if int64(len(d.merges)) < id {
 		return nil
 	}
 
-	me := p.(*Merge)
-	return NewMergeData(me)
+	return NewMergeData(&d.merges[id])
 }

@@ -9,18 +9,19 @@ import (
 
 type Event struct {
 	data.ETag
-	ID          int64         `json:"id"`
-	Name        string        `json:"name"`
-	Description string        `json:"description"`
-	Date        time.Time     `json:"date"`
-	Attachments []*Attachment `json:"attachments"`
-	lock        sync.RWMutex  `json:"-"`
+	ID          int64               `json:"id"`
+	Name        string              `json:"name"`
+	Description string              `json:"description"`
+	Date        time.Time           `json:"date"`
+	attachments map[*Attachment]any `json:"-"`
+	lock        sync.RWMutex        `json:"-"`
 }
 
 func NewEvent(id int64) *Event {
 	return &Event{
 		ID:   id,
 		lock: sync.RWMutex{},
+		attachments: make(map[*Attachment]any),
 	}
 }
 
@@ -81,15 +82,30 @@ func (e *Event) PartialUpdate(ed *data.EventData) error {
 }
 
 func (e *Event) bindAttachment(at *Attachment) error {
-	e.Attachments = append(e.Attachments, at)
+	_, ok := e.attachments[at]
+	if ok {
+		return data.ErrConflict
+	}
+	e.attachments[at] = struct{}{}
+
+	return nil
+}
+
+func (e *Event) unbindAttachment(at *Attachment) error {
+	_, ok := e.attachments[at]
+	if !ok {
+		return data.ErrNotFound
+	}
+
+	delete(e.attachments, at)
 
 	return nil
 }
 
 func (e *Event) getBoundAttachments() []data.AttachmentData {
-	ad := make([]data.AttachmentData, len(e.Attachments))
-	for i, at := range e.Attachments {
-		ad[i] = *NewAttachmentData(at)
+	ad := make([]data.AttachmentData, 0, len(e.attachments))
+	for at := range e.attachments {
+		ad = append(ad, *NewAttachmentData(at))
 	}
 
 	return ad
