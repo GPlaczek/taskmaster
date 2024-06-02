@@ -10,11 +10,6 @@ POST Attachments End Point Should Work
     [Template]  Simple POST On Collection
     attachments
 
-Adding Attachments Should Not Work For Incomplete Data
-    ${Event Data}  Create Dictionary
-
-    POST  http://localhost:8080/attachments  json=${EventData}  expected_status=400
-
 Updating Attachments Should Work
     [Template]  Simple PUT On Object
     attachments

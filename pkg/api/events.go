@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/hex"
+	"fmt"
 	"net/http"
 
 	"github.com/GPlaczek/taskmaster/pkg/data"
@@ -30,21 +31,15 @@ func (a *Api) getEvent(c *gin.Context) {
 }
 
 func (a *Api) addEvent(c *gin.Context) {
-	var ev data.EventData
-
-	if err := c.ShouldBindJSON(&ev); err != nil {
-		c.Status(http.StatusUnprocessableEntity)
-		return
-	}
-
-	e, err := a.data.AddEvent(&ev)
+	e, err := a.data.AddEvent()
 	if err != nil {
 		c.Status(data.ErrToHttpStatus(err))
 		return
 	}
 
 	c.Header("ETag", hex.EncodeToString(e.ETag))
-	c.JSON(http.StatusOK, gin.H{"id": e.ID})
+	c.Header("Location", fmt.Sprintf("/events/%d", *e.ID))
+	c.Status(http.StatusCreated)
 }
 
 func (a *Api) updateEvent(c *gin.Context) {
@@ -71,7 +66,7 @@ func (a *Api) updateEvent(c *gin.Context) {
 	}
 
 	c.Header("ETag", hex.EncodeToString(e.ETag))
-	c.Status(http.StatusOK)
+	c.JSON(http.StatusOK, e)
 }
 
 func (a *Api) deleteEvent(c *gin.Context) {
@@ -85,7 +80,6 @@ func (a *Api) deleteEvent(c *gin.Context) {
 		return
 	}
 
-	
 	if err := a.data.DeleteEvent(id, rqet); err != nil {
 		c.Status(data.ErrToHttpStatus(err))
 		return
@@ -111,7 +105,6 @@ func (a *Api) bindAttachment(c *gin.Context) {
 		return
 	}
 
-	
 	if err := a.data.BindAttachment(eid, *at.ID); err != nil {
 		c.Status(data.ErrToHttpStatus(err))
 		return

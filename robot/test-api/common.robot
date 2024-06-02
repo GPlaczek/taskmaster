@@ -14,22 +14,25 @@ Get Test Object
 
 Add Test Object
     [Arguments]  ${collection}
-    ${Body}  Create Dictionary
+    ${POST Response}  POST  http://localhost:8080/${collection}  expected_status=201
+    ${POST Response Headers}  Set Variable  ${POST Response.headers}
+    ${Location}  Set Variable  ${POST Response Headers["Location"]}
+    ${ETag}  Set Variable  ${POST Response Headers["ETag"]}
+
+    ${PUT Request Body}  Create Dictionary
     IF  '${collection}' == 'events'
-        Set To Dictionary  ${Body}  name  test
-        Set To Dictionary  ${Body}  description  testtest
-        Set To Dictionary  ${Body}  date  2024-05-06T08:40:00Z
+        Set To Dictionary  ${PUT Request Body}  name  test
+        Set To Dictionary  ${PUT Request Body}  description  testtest
+        Set To Dictionary  ${PUT Request Body}  date  2024-05-06T08:40:00Z
     ELSE
-        Set To Dictionary  ${Body}  data  Test content
+        Set To Dictionary  ${PUT Request Body}  data  Test content
     END
+    ${PUT Request Headers}  Create Dictionary
+    Set To Dictionary  ${PUT Request Headers}  If-Match  ${ETag}
 
-    ${Response}  POST  http://localhost:8080/${collection}  json=${body}
-
-    ${Response Body}  Set Variable  ${Response.json()}
-    ${Response Headers}  Set Variable  ${Response.headers}
-
-    ${Id}  Set Variable  ${Response Body["id"]}
-    ${ETag}  Set Variable  ${Response Headers["ETag"]}
+    ${PUT Response}  PUT  http://localhost:8080${Location}  json=${PUT Request Body}  headers=${PUT Request Headers}
+    ${PUT Response Body}  Set Variable  ${PUT Response.json()}
+    ${Id}  Set Variable  ${PUT Response Body["id"]}
 
     RETURN  ${Id}  ${ETag}
 

@@ -10,13 +10,6 @@ POST Events End Point Should Work
     [Template]  Simple POST On Collection
     events
 
-Adding Events Should Not Work For Incomplete Data
-    ${Event Data}  Create Dictionary
-    Set To Dictionary  ${Event Data}  name  test
-    Set To Dictionary  ${Event Data}  description  testtest
-
-    POST  http://localhost:8080/events  json=${EventData}  expected_status=400
-
 Updating Events Should Work
     [Template]  Simple PUT On Object
     events

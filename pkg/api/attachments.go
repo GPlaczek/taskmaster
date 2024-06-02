@@ -2,7 +2,7 @@ package api
 
 import (
 	"encoding/hex"
-	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/GPlaczek/taskmaster/pkg/data"
@@ -30,26 +30,15 @@ func (a *Api) getAttachment(c *gin.Context) {
 }
 
 func (a *Api) addAttachment(c *gin.Context) {
-	var at data.AttachmentData
-
-	if err := c.ShouldBindJSON(&at); err != nil {
-		c.Status(http.StatusUnprocessableEntity)
+	_a, err := a.data.AddAttachment()
+	if err != nil {
+		c.Status(data.ErrToHttpStatus(err))
 		return
 	}
 
-	_a, err := a.data.AddAttachment(&at)
-	if err != nil {
-		if errors.Is(err, data.ErrMissingField) || errors.Is(err, data.ErrInvalidId) {
-			c.Status(http.StatusBadRequest)
-			return
-		} else {
-			c.Status(http.StatusInternalServerError)
-			return
-		}
-	}
-
 	c.Header("ETag", hex.EncodeToString(_a.ETag))
-	c.JSON(http.StatusOK, gin.H{"id": _a.ID})
+	c.Header("Location", fmt.Sprintf("/attachments/%d", *_a.ID))
+	c.Status(http.StatusCreated)
 }
 
 func (a *Api) updateAttachment(c *gin.Context) {
@@ -76,7 +65,7 @@ func (a *Api) updateAttachment(c *gin.Context) {
 	}
 
 	c.Header("ETag", hex.EncodeToString(e.ETag))
-	c.Status(http.StatusOK)
+	c.JSON(http.StatusOK, e)
 }
 
 func (a *Api) deleteAttachment(c *gin.Context) {

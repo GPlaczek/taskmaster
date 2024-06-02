@@ -73,25 +73,21 @@ func NewMergeData(me *Merge) *data.MergeData {
 	}
 }
 
-func (d *Data) AddEvent(ed *data.EventData) (*data.EventData, error) {
-	ev := NewEvent(d.evId)
+func (d *Data) AddEvent() (*data.EventData, error) {
+	eid := d.evId
+	ev := NewEvent(eid)
 	ev.lock.Lock()
 	defer ev.lock.Unlock()
 
-	_, err := ev.update(ed, nil)
-	if err != nil {
+	if err := ev.ETagUpdate(); err != nil {
 		return nil, err
 	}
 
-	err = ev.ETagUpdate()
-	if err != nil {
-		return nil, err
-	}
-
-	d.events.Set(ev.ID, ev)
+	ev.ID = eid
+	d.events.Set(eid, ev)
 	d.evId++
 
-	return NewEventData(ev), nil
+	return NewEventData(ev) , nil
 }
 
 func (d *Data) GetEvents() []data.EventData {
@@ -149,23 +145,19 @@ func (d *Data) UpdateEvent(id int64, ed *data.EventData, tag []byte) (*data.Even
 	return ev.update(ed, tag)
 }
 
-func (d *Data) AddAttachment(ad *data.AttachmentData) (*data.AttachmentData, error) {
-	at := NewAttachment(d.atId)
+func (d *Data) AddAttachment() (*data.AttachmentData, error) {
+	aid := d.atId
+	at := NewAttachment(aid)
 	at.lock.Lock()
 	defer at.lock.Unlock()
 
-	_, err := at.update(ad, nil)
-	if err != nil {
+	if err := at.ETagUpdate(); err != nil {
 		return nil, err
 	}
 
-	err = at.ETagUpdate()
-	if err != nil {
-		return nil, err
-	}
-
-	d.attachments.Set(at.ID, at)
-	d.evId++
+	at.ID = aid
+	d.attachments.Set(aid, at)
+	d.atId++
 
 	return NewAttachmentData(at), nil
 }

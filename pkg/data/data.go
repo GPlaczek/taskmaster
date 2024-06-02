@@ -33,13 +33,13 @@ func ErrToHttpStatus(err error) int {
 }
 
 type Data interface {
-	AddEvent(*EventData) (*EventData, error)
+	AddEvent() (*EventData, error)
 	GetEvents() []EventData
 	GetEvent(int64) *EventData
 	DeleteEvent(int64, []byte) error
 	UpdateEvent(int64, *EventData, []byte) (*EventData, error)
 
-	AddAttachment(*AttachmentData) (*AttachmentData, error)
+	AddAttachment() (*AttachmentData, error)
 	GetAttachments() []AttachmentData
 	GetAttachment(int64) *AttachmentData
 	DeleteAttachment(int64, []byte) error
