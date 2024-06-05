@@ -153,9 +153,9 @@ func (a *Api) eventRoutes(router *gin.Engine) {
 	router.POST("/events", a.addEvent)
 
 	eventRouter := router.Group("/events/:id")
-	eventRouter.GET("/", a.getEvent)
-	eventRouter.PUT("/", a.updateEvent)
-	eventRouter.DELETE("/", a.deleteEvent)
+	eventRouter.GET("", a.getEvent)
+	eventRouter.PUT("", a.updateEvent)
+	eventRouter.DELETE("", a.deleteEvent)
 
 	eventRouter.POST("/attachments", a.bindAttachment)
 	eventRouter.GET("/attachments", a.getBoundAttachments)
