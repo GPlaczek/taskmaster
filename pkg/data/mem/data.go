@@ -273,8 +273,8 @@ func (d *Data) BindAttachment(eid int64, aid int64) error {
 
 	ev.lock.Lock()
 	defer ev.lock.Unlock()
-	at.lock.RLock()
-	defer at.lock.RUnlock()
+	at.lock.Lock()
+	defer at.lock.Unlock()
 
 	if err := ev.bindAttachment(at); err != nil {
 		return err
@@ -302,8 +302,8 @@ func (d *Data) UnbindAttachment(eid int64, aid int64) error {
 
 	ev.lock.Lock()
 	defer ev.lock.Unlock()
-	at.lock.RLock()
-	defer at.lock.RUnlock()
+	at.lock.Lock()
+	defer at.lock.Unlock()
 
 	if err := ev.unbindAttachment(at); err != nil {
 		return err
@@ -378,6 +378,7 @@ func (d *Data) MergeEvents(md *data.MergeData) (*data.EventData, *data.MergeData
 	e3d := NewEventData(ev3)
 
 	d.events.Set(d.evId, ev3)
+	d.evId++
 	d.events.Delete(ev1.ID)
 	d.events.Delete(ev2.ID)
 

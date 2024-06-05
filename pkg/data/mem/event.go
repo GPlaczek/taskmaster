@@ -82,11 +82,12 @@ func (e *Event) PartialUpdate(ed *data.EventData) error {
 }
 
 func (e *Event) bindAttachment(at *Attachment) error {
-	_, ok := e.attachments[at]
-	if ok {
+	if at.event != nil {
 		return data.ErrConflict
 	}
+
 	e.attachments[at] = struct{}{}
+	at.event = e
 
 	return nil
 }
@@ -98,6 +99,7 @@ func (e *Event) unbindAttachment(at *Attachment) error {
 	}
 
 	delete(e.attachments, at)
+	at.event = nil
 
 	return nil
 }
