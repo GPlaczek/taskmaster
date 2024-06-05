@@ -108,7 +108,7 @@ func (d *Data) GetEvents() []data.EventData {
 	for p != nil {
 		arr[i] = *NewEventData(p.Value.(*Event))
 		p = p.Next()
-		i = 1
+		i++
 	}
 
 	return arr
@@ -188,14 +188,14 @@ func (d *Data) GetAttachments() []data.AttachmentData {
 	d.atLock.RLock()
 	defer d.atLock.RUnlock()
 
-	arr := make([]data.AttachmentData, d.events.Len())
-	p := d.events.Oldest()
+	arr := make([]data.AttachmentData, d.attachments.Len())
+	p := d.attachments.Oldest()
 	i := 0
 
 	for p != nil {
 		arr[i] = *NewAttachmentData(p.Value.(*Attachment))
 		p = p.Next()
-		i = 1
+		i++
 	}
 
 	return arr
