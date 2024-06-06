@@ -1,6 +1,7 @@
 package mem
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -217,6 +218,41 @@ func (d *Data) GetAttachment(id int64) *data.AttachmentData {
 	return NewAttachmentData(at)
 }
 
+func (d *Data) GetBoundAttachment(eid, aid int64) *data.AttachmentData {
+	d.evLock.RLock()
+	defer d.evLock.RUnlock()
+
+	ev_, ok := d.events.Get(eid)
+	if !ok {
+		fmt.Println("Noevent");
+		return nil
+	}
+	ev := ev_.(*Event)
+
+	ev.lock.RLock()
+	defer ev.lock.RUnlock()
+
+	d.atLock.RLock()
+	defer d.atLock.RUnlock()
+	at_, ok := d.attachments.Get(aid)
+	if !ok {
+		fmt.Println("Noatta");
+		return nil
+	}
+	at := at_.(*Attachment)
+
+	at.lock.RLock()
+	defer at.lock.RUnlock()
+
+	_, ok = ev.attachments[at]
+	if !ok {
+		fmt.Println("NotBound");
+		return nil
+	}
+
+	return NewAttachmentData(at) 
+}
+
 func (d *Data) UpdateAttachment(id int64, ad *data.AttachmentData, tag []byte) (*data.AttachmentData, error) {
 	d.atLock.RLock()
 	defer d.atLock.RUnlock()
@@ -226,6 +262,40 @@ func (d *Data) UpdateAttachment(id int64, ad *data.AttachmentData, tag []byte) (
 		return nil, data.ErrNotFound
 	}
 	at := p.(*Attachment)
+	at.lock.Lock()
+	defer at.lock.Unlock()
+
+	return at.update(ad, tag)
+}
+
+func (d *Data) UpdateBoundAttachment(eid, aid int64, ad *data.AttachmentData, tag []byte) (*data.AttachmentData, error) {
+	d.evLock.RLock()
+	defer d.evLock.RUnlock()
+
+	ev_, ok := d.events.Get(eid)
+	if !ok {
+		return nil, data.ErrNotFound
+	}
+	ev := ev_.(*Event)
+
+	ev.lock.RLock()
+	defer ev.lock.RUnlock()
+
+	d.atLock.RLock()
+	defer d.atLock.RUnlock()
+	at_, ok := d.attachments.Get(aid)
+	if !ok {
+		return nil, data.ErrNotFound
+	}
+	at := at_.(*Attachment)
+
+	at.lock.Lock()
+	defer at.lock.Unlock()
+
+	_, ok = ev.attachments[at]
+	if !ok {
+		return nil, data.ErrNotFound
+	}
 
 	return at.update(ad, tag)
 }

@@ -2,8 +2,8 @@
 Library        Process
 Library        Collections
 
-Suite Setup          Setup Test
-Suite Teardown       Teardown Test
+# Suite Setup          Setup Test
+# Suite Teardown       Teardown Test
 
 *** Keywords ***
 Setup Test

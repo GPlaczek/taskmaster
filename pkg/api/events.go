@@ -148,6 +148,58 @@ func (a *Api) unbindAttachment(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+func (a *Api) updateBoundAttachment(c *gin.Context) {
+	eid, ok := getID(c)
+	if !ok {
+		return
+	}
+
+	aid, ok := getID2(c, "aid")
+	if !ok {
+		return
+	}
+
+	rqet := checkETag(c)
+	if rqet == nil {
+		return
+	}
+
+	var at data.AttachmentData
+	if err := c.ShouldBindJSON(&at); err != nil {
+		c.Status(http.StatusUnprocessableEntity)
+		return
+	}
+
+	e, err := a.data.UpdateBoundAttachment(eid, aid, &at, rqet)
+	if err != nil {
+		c.Status(data.ErrToHttpStatus(err))
+		return
+	}
+
+	c.Header("ETag", hex.EncodeToString(e.ETag))
+	c.JSON(http.StatusOK, e)
+}
+
+func (a *Api) getBoundAttachment(c *gin.Context) {
+	eid, ok := getID(c)
+	if !ok {
+		return
+	}
+
+	aid, ok := getID2(c, "aid")
+	if !ok {
+		return
+	}
+
+	at := a.data.GetBoundAttachment(eid, aid)
+	if at == nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
 func (a *Api) eventRoutes(router *gin.Engine) {
 	router.GET("/events", a.getEvents)
 	router.POST("/events", a.addEvent)
@@ -159,5 +211,7 @@ func (a *Api) eventRoutes(router *gin.Engine) {
 
 	eventRouter.POST("/attachments", a.bindAttachment)
 	eventRouter.GET("/attachments", a.getBoundAttachments)
+	eventRouter.GET("/attachments/:aid", a.getBoundAttachment) 
+	eventRouter.PUT("/attachments/:aid", a.updateBoundAttachment) 
 	eventRouter.DELETE("/attachments/:aid", a.unbindAttachment) 
 }
